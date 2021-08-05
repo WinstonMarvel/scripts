@@ -1,83 +1,81 @@
 (function($) {
-    $(document).ready(function() {
-        $(window).resize(function() {
-            $('.et_blog_grid_equal_height').each(function() {
-                equalise_articles($(this));
+    var equalizeHeights = function(element, breakpoint=981) {
+        var perform = function() {
+            if(window.innerWidth < breakpoint) {
+                return;
+            }
+            $(element).height("auto");
+            var maxHeight = 0;
+            $(element).each(function(){
+                if ($(this).height() > maxHeight) { maxHeight = $(this).height(); }
             });
+            $(element).height(maxHeight);
+        };
+        perform();
+    
+        onResize(perform);
+        onMutations(perform, element);
+        onAjaxCompletion(perform, element);
+    
+        return perform;
+    }
+    
+    function onMutations(fn, element) {
+        var observer = new MutationObserver(function() {
+            fn();
         });
-
-        $('.et_blog_grid_equal_height').each(function() {
-            var blog = $(this);
-
-            equalise_articles($(this));
-
-            var observer = new MutationObserver(function(mutations) {
-                equalise_articles(blog);
-            });
-            
-            var config = {
+        $(element).each(function() {
+            var thisElement = $(this)[0];
+            observer.observe(thisElement, {
                 subtree: true,
                 childList: true 
-            };
-
-            observer.observe(blog[0], config);
+            });
         });
-
-        function equalise_articles(blog) {
-            var articles = blog.find('article');
-            var heights = [];
-            
-            articles.each(function() {
-                var height = 0;
-                height += ($(this).find('.et_pb_image_container, .et_main_video_container').length != 0) ? $(this).find('.et_pb_image_container, .et_main_video_container').outerHeight(true) : 0;
-                height += $(this).find('.entry-title').outerHeight(true);
-                height += ($(this).find('.post-meta').length != 0) ? $(this).find('.post-meta').outerHeight(true) : 0; 
-                height += ($(this).find('.post-content').length != 0) ? $(this).find('.post-content').outerHeight(true) : 0;    
-
-                heights.push(height);
-            });
-
-            var max_height = Math.max.apply(Math,heights); 
-
-            articles.each(function() {
-                $(this).height(max_height);
-            });
-        }
-
+    };
+    
+    function onResize(fn) {
+        window.addEventListener('resize', fn()); 
+    };
+    
+    
+    function onAjaxCompletion(fn, element) {
         $(document).ajaxComplete(function() {
-            $('.et_blog_grid_equal_height').imagesLoaded().then(function() {
-                $('.et_blog_grid_equal_height').each(function(){
-                    equalise_articles($(this));
-                });
+            $(element).imagesLoaded().then(function() {
+               fn();
             });
         });
-
-        $.fn.imagesLoaded = function() {
-            var $imgs = this.find('img[src!=""]');
-            var dfds = [];
-
-            if (!$imgs.length) {
-                return $.Deferred().resolve().promise();
-            }            
-
-            $imgs.each(function(){
-                var dfd = $.Deferred();
-                dfds.push(dfd);
-                var img = new Image();
-
-                img.onload = function() {
-                    dfd.resolve();
-                };
-
-                img.onerror = function() {
-                    dfd.resolve(); 
-                };
-
-                img.src = this.src;
-            });
-
-            return $.when.apply($, dfds);
-        }
-    });
+    };
+    
+    $.fn.imagesLoaded = function() {
+        var $imgs = this.find('img[src!=""]');
+        var dfds = [];
+    
+        if (!$imgs.length) {
+            return $.Deferred().resolve().promise();
+        }            
+    
+        $imgs.each(function(){
+            var dfd = $.Deferred();
+            dfds.push(dfd);
+            var img = new Image();
+    
+            img.onload = function() {
+                dfd.resolve();
+            };
+    
+            img.onerror = function() {
+                dfd.resolve(); 
+            };
+    
+            img.src = this.src;
+        });
+    
+        return $.when.apply($, dfds);
+    }
+    
+    $(window).on('load', function() {
+        equalizeHeights(".solutions-wrapper  .image-container"); 
+        equalizeHeights(".solutions-wrapper h4:first-child"); 
+    });    
 })(jQuery);
 
